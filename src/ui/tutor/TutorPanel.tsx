@@ -193,6 +193,8 @@ export function TutorPanel({ open, onClose, q, questionKey, skillTitle, player, 
     }
     const failed = reply.fallback && ["timeout", "rate-limited", "provider-error"].includes(reply.fallback.reason);
     setUnavailable(!!failed);
+    // the live tutor failed: give the typed question back so it can be sent again
+    if (failed && action === "ask" && message) setDraft((d) => d || message);
     const tutorMsg: Message = { id: newRequestId(), role: "tutor", text: reply.text, source: reply.source, fallback: reply.fallback?.reason, speechToken: reply.speechToken };
     setMessages((ms) => [...ms, tutorMsg].slice(-24));
     if (opts.speakReply || speakRepliesRef.current) void speak(tutorMsg);
@@ -306,6 +308,11 @@ export function TutorPanel({ open, onClose, q, questionKey, skillTitle, player, 
               <div key={m.id} className={`tutor__msg tutor__msg--${m.role}`} data-testid={`tutor-msg-${m.role}`} data-source={m.source}>
                 {m.role === "tutor" && m.fallback && FALLBACK_NOTE[m.fallback] && <p className="tutor__fallback" data-testid="tutor-fallback" data-reason={m.fallback}>{FALLBACK_NOTE[m.fallback]}</p>}
                 <p>{m.text}</p>
+                {m.role === "tutor" && canSpeakAny && (
+                  <button type="button" className="tutor__play" onClick={() => (playingId === m.id ? stopAudio() : void speak(m))} aria-label={playingId === m.id ? "Stop reading" : "Read aloud"} data-testid="tutor-msg-play">
+                    {playingId === m.id ? "■ Stop" : "▶ Play"}
+                  </button>
+                )}
                 {m.role === "tutor" && playingId === m.id && (
                   <p className="tutor__caption-badge" data-testid="tutor-voice-badge">
                     {voiceKind === "ai" ? "AI-generated voice, not a human." : voiceKind === "fixture" ? "Test tone from the developer fixture, not a voice." : "Read by your browser's voice, not a human."}

@@ -366,7 +366,7 @@ describe("Gemini adapter (mocked network)", () => {
     const m = material(GRAPH, "guide-visual");
     const { f, calls } = mockFetch(() => geminiOk({ kind: "guidance", say: "Where is the curve steepest?", tools: [{ name: "highlight", level: null, target: m.permissions.highlightTargets[0] }] }));
     const out = await geminiProvider(gcfg(f)).turn(m, treq(GRAPH, "guide-visual"), new AbortController().signal);
-    expect(calls[0]!.url).toBe("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent");
+    expect(calls[0]!.url).toBe("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent");
     expect(calls[0]!.url + String(calls[0]!.init.body)).not.toContain(FAKE_KEY);
     expect((calls[0]!.init.headers as Record<string, string>)["x-goog-api-key"]).toBe(FAKE_KEY);
     expect(out).toEqual({ kind: "guidance", say: "Where is the curve steepest?", tools: [{ name: "highlight", args: { target: m.permissions.highlightTargets[0] } }] });
@@ -383,6 +383,16 @@ describe("Gemini adapter (mocked network)", () => {
     const limited = await run(() => new Response(JSON.stringify({ error: { status: "RESOURCE_EXHAUSTED", details: [{ retryDelay: "12s" }] } }), { status: 429 }));
     expect(limited.fallback?.reason).toBe("rate-limited");
     expect(() => readGemini({ candidates: [{ finishReason: "MAX_TOKENS", content: { parts: [{ text: "{" }] } }] })).toThrow(/MAX_TOKENS/);
+  });
+  it("answers a student's own typed question, trying the next model when one isn't found", async () => {
+    const say = "A derivative measures how fast a quantity changes. For example, light covers about 300000 kilometres every second, so its distance grows at that rate.";
+    const { f, calls } = mockFetch((url) => (url.includes("gemini-3.8-flash") ? geminiOk({ kind: "guidance", say, tools: [] }) : new Response("{}", { status: 404 })));
+    const r = await runTurn(geminiProvider(gcfg(f)), material(GRAPH, "ask"), treq(GRAPH, "ask", {}, "What does a derivative actually mean?"), { answerForms: answerForms(inst(GRAPH)), timeoutMs: 2000 });
+    expect(r).toMatchObject({ source: "live", text: say });
+    expect(r.fallback).toBeUndefined();
+    expect(calls.map((c) => c.url.match(/models\/([^:]+)/)![1])).toEqual(["gemini-3.6-flash", "gemini-3.8-flash"]);
+    const refused = await runTurn(geminiProvider(gcfg(mockFetch(() => new Response("{}", { status: 401 })).f)), material(GRAPH, "ask"), treq(GRAPH, "ask", {}, "What is a derivative?"), { answerForms: [], timeoutMs: 2000 });
+    expect(refused.fallback?.reason).toBe("provider-error");
   });
 });
 

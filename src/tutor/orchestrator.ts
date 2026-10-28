@@ -55,6 +55,8 @@ export async function runTurn(provider: TutorProvider, m: TutorMaterial, req: Tu
   try {
     raw = await provider.turn(m, req, ctrl.signal);
   } catch (e) {
+    // server side only: say why the provider failed (never the key or the request body)
+    if (typeof window === "undefined" && !opts.signal?.aborted) console.warn(`[tutor] ${provider.id} failed: ${e instanceof Error ? e.message : "unknown error"}`);
     const reason: FallbackReason = opts.signal?.aborted ? "cancelled"
       : e instanceof TutorProviderError ? (ctrl.signal.aborted && e.reason === "cancelled" ? "timeout" : e.reason)
       : ctrl.signal.aborted ? "timeout" : "provider-error";

@@ -16,7 +16,7 @@
   - Production builds never take this path: the build scan confirms no adapter code reaches them, and every gate below still applies to any deployment.
 - **Gemini adapter (D-085).** `adapters/gemini/index.ts` uses plain fetch to `generateContent` with `x-goog-api-key`, a JSON response format with a flat schema narrowed per turn, and mapping to the neutral shape. Blocks, non-STOP finishes, 429 (`retryDelay`), 400/401/403/404 and network errors all map to authored fallback.
   - It is text only (no voice).
-  - The default model is `gemini-3.8-flash` (`GEMINI_TUTOR_MODEL`), not live-verified.
+  - The default model is `gemini-3.6-flash` with minimal thinking (`GEMINI_TUTOR_MODEL`), live-verified 2026-10-28 at 2–4 s per reply; `gemini-3.8-flash` is the fallback.
   - Gemini's terms bar services likely used by under-18s (OQ-1), so it suits local testing.
   - Both adapters can be compiled in for production with `--provider openai,gemini`, but only the recorded provider may be used, and only its host may appear in the build.
 - **Lesson design (D-084).** The lesson and session screens (`.qshell`) use a light, card-based theme inspired by Brilliant:

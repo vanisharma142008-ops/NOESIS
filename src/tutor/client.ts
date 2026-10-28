@@ -21,6 +21,8 @@ export function tutorFeatures(): Promise<TutorFeatures> {
     })
     .catch(() => AUTHORED_FEATURES);
   featuresPromise = p;
+  // a failed or authored answer is not kept, so the next time Help opens it asks again (e.g. after a server restart)
+  void p.then((f) => { if (f.mode === "authored" && featuresPromise === p) featuresPromise = null; });
   return p;
 }
 /** tests and the developer fixture page reset the cached answer */

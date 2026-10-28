@@ -17,9 +17,11 @@ import { TUTOR_INSTRUCTIONS, tutorContext } from "@/src/tutor/prompt";
 import type { AdapterFactory, TutorAdapter } from "@/src/tutor/server/adapterTypes";
 
 export const GEMINI_API = "https://generativelanguage.googleapis.com/v1beta";
-export const GEMINI_DEFAULT_MODELS = { tutor: "gemini-3.8-flash" } as const;
+// gemini-3.6-flash with minimal thinking answers in 2-4 s; gemini-3.8-flash took 15-120 s and rejects
+// minimal thinking (measured 2026-10-28). gemini-2.5-flash is no longer offered to new keys.
+export const GEMINI_DEFAULT_MODELS = { tutor: "gemini-3.6-flash" } as const;
 /** tried in order if the configured model is not found */
-export const GEMINI_FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-2.5-flash"];
+export const GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash"];
 
 export interface GeminiConfig { apiKey: string; models: { tutor: string }; maxOutputTokens: number; fetch: typeof fetch }
 
@@ -32,7 +34,8 @@ export function geminiConfig(env: Record<string, string | undefined>, f: typeof 
   return {
     apiKey,
     models: { tutor: m && MODEL_ID.test(m) ? m : GEMINI_DEFAULT_MODELS.tutor },
-    maxOutputTokens: Math.min(1200, Math.max(200, Number(env.GEMINI_TUTOR_MAX_OUTPUT_TOKENS) || 600)),
+    // thinking models count their reasoning against this budget, so it is well above the reply's own length
+    maxOutputTokens: Math.min(4096, Math.max(200, Number(env.GEMINI_TUTOR_MAX_OUTPUT_TOKENS) || 2048)),
     fetch: f,
   };
 }
@@ -115,7 +118,7 @@ export function readGemini(body: GeminiBody): unknown {
 
 export function geminiRequest(cfg: GeminiConfig, m: TutorMaterial, req: TutorRequest, legacy = false) {
   if (legacy) {
-    // older REST field names, used only if the current ones are rejected
+    // older REST field names and no thinking setting, used only if the current request is rejected
     return {
       systemInstruction: { parts: [{ text: TUTOR_INSTRUCTIONS }] },
       contents: [{ role: "user", parts: [{ text: tutorContext(m, req) }] }],
@@ -128,6 +131,8 @@ export function geminiRequest(cfg: GeminiConfig, m: TutorMaterial, req: TutorReq
     generationConfig: {
       maxOutputTokens: cfg.maxOutputTokens,
       temperature: 0.4,
+      // short tutoring replies need little reasoning, and full thinking can outrun the request timeout
+      thinkingConfig: { thinkingLevel: "minimal" },
       responseFormat: { text: { mimeType: "APPLICATION_JSON", schema: geminiSchema(m) } },
     },
   };
