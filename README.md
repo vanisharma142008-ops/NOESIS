@@ -1,61 +1,100 @@
 # NOÊSIS
 
-Interactive, adaptive Physics and Mathematics for CBSE/NCERT Class 11–12, covering a curated 24-chapter subset.
+**Interactive, adaptive Physics and Mathematics for CBSE/NCERT Classes 11–12.**
 
-**Current state (2026-10-28):** the roadmap, player/checker and the consolidated **Phase 3** (Laws of Motion pilot content, adaptive sessions with recursive detours and exact resume, mastery and completion) are built. Phase 2 and Phase 3 product review and the **named human content review** are pending: no content is approved yet, so real mastery can't be earned until it is (a labelled reviewer preview demonstrates the journeys). See the [Phase 3 report](docs/phase-3-report.md) and the [phase plan](docs/phase-plan.md). **Phase 5** added the tutor panel with its owl, interactive visual explanations and a voice pipeline. Help runs on the lesson's own hints and visuals, and live AI is prepared but switched off; see the [Phase 5 report](docs/phase-5-report.md). Historical reports: [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md). The blueprint starts at [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md).
+NOÊSIS helps students learn through interactive lessons, visual explanations, adaptive practice, and personalized study sessions across a curated selection of 24 chapters.
 
-## Run it
+## Current Status
 
-Needs Node.js 20.9 or newer.
+As of October 28, 2026:
+
+- **Roadmap and learning system:** Built, including adaptive practice, answer checking, progress tracking, and session resume.
+- **Phase 3:** Laws of Motion pilot with adaptive sessions and mastery tracking.
+- **Phase 5:** Animated owl tutor, interactive visual explanations, and voice support.
+- **Content review:** Questions and lessons are still awaiting human approval. Mastery is disabled for unapproved content.
+- **AI tutoring:** Disabled by default. The tutor currently uses built-in hints and visual explanations.
+
+See the [Phase 3 Report](https://github.com/vanisharma142008-ops/NOESIS/blob/main/docs/phase-3-report.md), [Phase 5 Report](https://github.com/vanisharma142008-ops/NOESIS/blob/main/docs/phase-5-report.md), and [Project Blueprint](https://github.com/vanisharma142008-ops/NOESIS/blob/main/docs/BLUEPRINT.md).
+
+## Getting Started
+
+**Requirements:** Node.js 20.9 or newer.
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000
-# or a production build:
-npm run build && npm start
+npm run dev
 ```
 
-Progress is stored only in your browser (IndexedDB). Use *Export progress* / *Import progress* / *Erase progress* in the right-hand panel.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Checks
+To create a production build:
 
 ```bash
-npm run check          # curriculum rules, content validation, contrast, no-AI-SDK guard, typecheck, unit tests
-npm run build && npx playwright test   # browser tests (desktop + phone): navigation, persistence, keyboard,
-                                       # reduced motion, accessibility (axe), frame timing, tutor journeys
-npm run e2e:tutor-fixture              # tutor voice and failure paths against a labelled developer fixture (next dev)
-npm run drafting:test                  # the separate offline drafting tool's own tests
+npm run build
+npm start
 ```
 
-## Content
+## Features
 
-51 templates (25 Laws of Motion, plus small Motion in a Plane, trigonometric-foundation and Straight Lines packs) and 3 lessons, all `in-review`; none counts toward mastery until a named reviewer approves it. `/chapter/<id>/try` runs an adaptive session; `?q=<templateId>&seed=<n>` opens a single question, and `?preview=review` starts a clearly labelled reviewer-preview session in which in-review content counts for that session only.
+- Interactive Physics and Mathematics learning.
+- Adaptive questions based on student progress.
+- Visual simulations and step-by-step explanations.
+- Animated owl tutor with hints and feedback.
+- Progress saved locally in the browser using IndexedDB.
+- Export, import, and erase progress.
+- Optional AI chat and voice support.
+
+## AI Tutor Setup
+
+AI features are disabled by default. To test AI tutoring locally:
+
+1. Copy `.env.example` to `.env.local`.
+2. Add your `OPENAI_API_KEY` or `GEMINI_API_KEY`.
+3. Run `npm run dev`.
+
+**Important:** Adding an API key alone does not enable AI. Provider configuration, adapter selection, and privacy review are also required. Never commit `.env.local` or expose your API keys.
+
+See [AI and Voice](https://github.com/vanisharma142008-ops/NOESIS/blob/main/docs/09-ai-and-voice.md) and [Privacy](https://github.com/vanisharma142008-ops/NOESIS/blob/main/docs/10-privacy.md).
+
+## Content and Testing
+
+Question templates and lessons are stored in `content/`. All content requires human review before it can count toward mastery.
+
+Validate content:
 
 ```bash
-npm run content:validate   # validates every question template (50 seeds each) and writes the student manifest
-npm run content:review     # local review tool at http://127.0.0.1:4100 (run npm run dev alongside it)
+npm run content:validate
 ```
 
-Question templates live in `content/templates/<chapter>/<skill>/<id>.json`, lessons in `content/lessons/<skill>.lesson.json`, misconception catalogues in `content/misconceptions/`. Approval is recorded only by a person through `content:review`; nothing approves itself. See docs/05 §4 and docs/phase-2-report.md.
+Run project checks:
 
-Browser tests need Playwright's Chromium. Run `npx playwright install chromium` once on a new machine.
-
-## What's here
-
-```
-app/ and src/               the web app (Next.js + React + TypeScript); see docs/01-architecture.md
-content/curriculum/         chapters, skills, foundations, related links (source of truth) + generated graph data
-config/learning.config.json adaptive-engine thresholds (all configurable)
-content/templates/          question templates (JSON); answers come from code solvers in src/content/solvers
-scripts/                    checks; scripts/content/ holds content:validate and content:review
-tests/unit, tests/e2e       Vitest and Playwright
-docs/                       blueprint, decision log, generated reports, reference images
+```bash
+npm run check
 ```
 
-## Tutor and AI
+Build and run browser tests:
 
-*Ask the tutor* opens a panel beside the lesson (a bottom sheet on phones) with an animated owl. By default it uses the lesson's own hints, feedback and visual cues on the device, and makes no AI calls. Demonstrations play on a copy of your work, with *Back to my work* to return.
+```bash
+npm run build
+npx playwright install chromium
+npx playwright test
+```
 
-**Try the AI chat on your own computer:** copy `.env.example` to `.env.local`, add your `OPENAI_API_KEY` (or `GEMINI_API_KEY`), and run `npm run dev`. The tutor then answers typed questions; OpenAI also adds push-to-talk voice.
+## Tech Stack
 
-For deployments, live AI tutoring and AI voice are built behind a provider-neutral contract, with OpenAI and Gemini adapters prepared. They stay **off** until a person records a provider decision and a privacy review in `config/student-ai.json`, the server environment enables them, the adapter is compiled in (`npm run tutor:select-adapter -- --provider openai`) and a server key is present. A key alone activates nothing. See docs/09, docs/10 and `.env.example`. The app contains no AI SDK (`npm run check:no-ai-sdk`). Offline drafting for adult content developers is a separate package in `tools/content-drafting/`.
+- Next.js
+- React
+- TypeScript
+- IndexedDB
+- Vitest and Playwright
+- Optional OpenAI and Gemini APIs
+
+## Project Structure
+
+- `app/` and `src/` — Application and learning engine
+- `content/` — Curriculum, lessons, and question templates
+- `config/` — Learning and AI settings
+- `tests/` — Unit and browser tests
+- `docs/` — Architecture, reports, and project plans
+
+**Note:** NOÊSIS is an actively developed project. Content approval and the live AI tutor are still pending.
